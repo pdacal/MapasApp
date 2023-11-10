@@ -10,6 +10,7 @@ import { Feature } from '../../interfaces/places';
 export class SearchResultsComponent {
 
   public selectedId: string = '';
+  public clickBoton: boolean = false;
 
   constructor(
     private placesService: PlacesService,
@@ -19,17 +20,34 @@ export class SearchResultsComponent {
 
   get isLoadingPlaces(){
     return this.placesService.isLoadingPlaces;
+
   }
 
   get places(): Feature[]{
     return this.placesService.places;
   }
-
+  get route(){
+    return this.mapService.getroute();
+  }
+  setBoton(boolean:boolean){
+    this.clickBoton=boolean;
+  }
 
   flyTo( place:Feature ){
     this.selectedId= place.id;
     const[ lng, lat ] = place.center;
     this.mapService.flyTo([ lng, lat]);
   }
+  getDirections(place: Feature) {
+    if(!this.placesService.userLocation)throw Error('No hay userLocation');
+
+    this.placesService.deletePlaces();
+
+    const start = this.placesService.userLocation;
+    const end = place.center as [number, number];
+    this.mapService.getRouteBetweenPoinst(start, end);
+  }
+
+
 
 }

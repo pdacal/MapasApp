@@ -14,10 +14,19 @@
     <h6>{{place.text_es}}</h6>
     <p>{{place.place_name}}</p>
     <button class="btn btn-sm"
+            (click)="getDirections(place)"
+            (click)="setBoton(true)"
             [ngClass]="(place.id === selectedId) ? 'btn-outline-light' : 'btn-outline-primary'"
     >
       Direcciones
     </button>
   </li>
-
 </ul>
+<!-- pasar a km, e a horas, controlar decimais -->
+<div *ngIf="clickBoton && route">
+      <span class=""><b>Distancia:</b> {{route!.distance /1000 | number:'1.1-1' }}km </span>
+      <span *ngIf="(route!.duration / 60) < 60 else horas"><b>Tiempo:</b> {{ route!.duration /60 | number:'0.0-0'}}min</span>
+      <ng-template #horas>
+        <span><b>Tiempo:</b> {{ route!.duration /3600 | number:'2.2-2'}}h</span>
+      </ng-template>
+</div>

@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
-import {  LngLatBounds, LngLatLike, Map, Marker, Popup } from 'mapbox-gl';
-import { Feature } from '../interfaces/places';
+import {  AnySourceData, LngLatBounds, LngLatLike, Map, Marker, Popup } from 'mapbox-gl';
+import { Feature, Properties } from '../interfaces/places';
+import { DirectionsApiClient } from '../api';
+import { DirectionsResponse, Route, Geometry } from '../interfaces/directions';
 
 @Injectable({
   providedIn: 'root'
@@ -9,10 +11,16 @@ export class MapServiceService {
 
   private map?: Map;
   private markers: Marker[] = [];
+  private route?: Route;
 
   get isMapReady() {
     return !!this.map;
   }
+  getroute(){
+    return this.route;
+  }
+
+  constructor(private directionsApi : DirectionsApiClient){}
 
   setMap(map: Map) {
     this.map = map;
@@ -54,5 +62,69 @@ export class MapServiceService {
     this.map.fitBounds(bounds,{
       padding:200});
   }
+
+  getRouteBetweenPoinst(start:[number,number], end:[number,number]){
+
+    this.directionsApi.get<DirectionsResponse>(`/${start.join(',')};${end.join(',')}`)
+    .subscribe( resp => this.drawPolyline(resp.routes[0]));
+
+  }
+  private drawPolyline(route: Route){
+    //console.log({kms: route.distance / 1000, mins: route.duration /60});
+
+    if(!this.map) throw Error('Mapa no inicializado');
+    this.route=route;//gardo a ruta
+    const coords = route.geometry.coordinates;
+    const bounds = new LngLatBounds();
+    coords.forEach(([lng, lat]) => {bounds.extend([lng, lat]);});
+
+    this.map?.fitBounds(bounds, {padding:200});
+    //Polyline do mapa  entre duas ubicacions
+    const sourceData:AnySourceData={
+      type:'geojson',
+      data:{
+        type:'FeatureCollection',
+        features:[{
+          type:'Feature',
+          properties:{},
+          geometry:{
+            type:'LineString',
+            coordinates:coords
+          }
+        }]
+      }
+    }
+    //limpiar ruta previa
+    if(this.map.getLayer('RouteString')){
+      this.map.removeLayer('RouteString');
+      this.map.removeSource('RouteString');
+    }
+    //establecer linea de ruta
+    this.map.addSource('RouteString',sourceData);
+    this.map.addLayer({
+        id:'RouteString',
+        type:'line',
+        source:'RouteString',
+        layout:{
+          'line-cap': 'round',
+          'line-join':'round'
+        },
+        paint:{
+          'line-color':'DodgerBlue',
+          'line-width': 6
+        }
+      });
+  }
+
+  deleteMarkers(){
+    this.markers.forEach(marker => marker.remove());
+  }
+  deletePolyline(){
+    if(this.map?.getLayer('RouteString')){
+      this.map.removeLayer('RouteString');
+      this.map.removeSource('RouteString');
+    }
+  }
+
 
 }

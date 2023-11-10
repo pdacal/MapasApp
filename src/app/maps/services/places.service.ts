@@ -65,4 +65,8 @@ getPlacesByQuery(query: string = ''){
   });
 }
 
+  deletePlaces(){
+    this.places=[];
+  }
+
 }
